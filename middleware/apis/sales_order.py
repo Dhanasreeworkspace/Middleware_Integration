@@ -61,8 +61,13 @@ def create_sales_order(data=None):
     if isinstance(data, str):
         data = json.loads(data)
 
-    # Print the request received from middleware
-    print(json.dumps(data, indent=4, ensure_ascii=False, default=str))
+    # Log the request received from middleware
+    logger = frappe.logger("sales_order_sync", allow_site=True)
+
+    logger.info(
+        "Received Sales Order request: %s",
+        json.dumps(data, indent=4, ensure_ascii=False, default=str)
+    )
 
     orders = data.get("data") if isinstance(data, dict) else data
 
@@ -123,6 +128,12 @@ def create_sales_order(data=None):
             "sales_order": so_doc.name,
             "customer": customer,
         })
+
+    # Log the final result
+    logger.info(
+        "Sales Order creation result: %s",
+        json.dumps(results, indent=4, ensure_ascii=False, default=str)
+    )
 
     return {
         "success": True,
