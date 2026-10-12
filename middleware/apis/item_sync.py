@@ -218,6 +218,7 @@ def build_payload(doc, event, include_images=False):
             "package_weight": doc.package_weight,
             "installation_type": doc.installation_type,
             "installation_level": doc.installation_level if doc.installation_type else None,
+            "installation_duration": doc.installation_duration or 0,
             "attributes": attributes,
             "images": images if include_images else []
         }
