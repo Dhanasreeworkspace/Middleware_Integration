@@ -10,6 +10,7 @@
   "document",
   "sync_type",
   "response_message",
+  "request",
   "column_break_aehc",
   "status",
   "retry_count",
@@ -46,6 +47,12 @@
    "read_only": 1
   },
   {
+    "fieldname": "request",
+    "fieldtype": "Small Text",
+    "label": "Request",
+    "read_only": 1
+},
+  {
    "fieldname": "retry_count",
    "fieldtype": "Int",
    "label": "Retry Count",
@@ -69,7 +76,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.sync_type==\"Single Document\"",
+   "depends_on": "eval:doc.sync_type==\"Single Document\" || doc.sync_type==\"Sales Order Sync\"",
    "fieldname": "document",
    "fieldtype": "Data",
    "label": "Document",
@@ -88,7 +95,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Sync Type",
-   "options": "Single Document\nBulk Import",
+   "options": "Single Document\nBulk Import\nSales Order Sync",
    "read_only": 1
   },
   {
