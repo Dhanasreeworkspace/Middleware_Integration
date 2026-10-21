@@ -56,12 +56,12 @@ def create_sales_order(data=None):
     """Create a Customer if needed, then create a Sales Order."""
 
     if not data:
-        data = frappe.request.get_data(as_text=True)
+        data = frappe.local.form_dict
 
-    if isinstance(data, str):
-        data = json.loads(data)
+    data = frappe.parse_json(data)
 
     orders = data.get("data") if isinstance(data, dict) and "data" in data else data
+
     if isinstance(orders, dict):
         orders = [orders]
 
