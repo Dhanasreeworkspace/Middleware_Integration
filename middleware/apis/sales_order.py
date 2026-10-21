@@ -57,7 +57,7 @@ from frappe.utils import now_datetime
 def create_sales_order(data=None):
     """Create a Customer if needed, then create a Sales Order."""
 
-    # NEW: Capture the incoming request payload
+    # Capture the incoming request payload
     raw_request = frappe.request.get_data(as_text=True)
 
     if not data:
@@ -66,7 +66,7 @@ def create_sales_order(data=None):
     if isinstance(data, str):
         data = json.loads(data)
 
-    # NEW: Create Middleware Sync Log for the incoming Sales Order request
+    # Create Middleware Sync Log for the incoming Sales Order request
     sync_log = frappe.get_doc({
         "doctype": "Middleware Sync Log",
         "event": "create",
@@ -139,7 +139,7 @@ def create_sales_order(data=None):
                 "customer": customer,
             })
 
-        # NEW: Update the log after successful creation
+        # Update the log after successful creation
         sync_log.document = results[0]["sales_order"] if results else None
         sync_log.status = "Success"
         sync_log.sync_time = now_datetime()
@@ -152,7 +152,7 @@ def create_sales_order(data=None):
         }
 
     except Exception:
-        # NEW: Mark the log as failed if the API encounters an error
+        # Mark the log as failed if an error occurs
         sync_log.reload()
         sync_log.status = "Failed"
         sync_log.sync_time = now_datetime()
