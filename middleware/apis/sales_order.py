@@ -110,7 +110,6 @@ def create_sales_order(data=None):
             "transaction_date": order_details.get("order_date"),
             "delivery_date": order_details.get("delivery_date"),
             "sales_channel": sales_channel,
-            "terms": "Test sentence from create_sales_order",
             "items": sales_order_items,
         })
 
