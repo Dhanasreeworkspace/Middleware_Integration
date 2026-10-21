@@ -52,19 +52,23 @@ from frappe.utils import now_datetime
 
 #     return {"sales_order": so_doc.name, "customer": customer}
 
-
 @frappe.whitelist()
 def create_sales_order(data=None):
     """Create a Customer if needed, then create a Sales Order."""
 
-    # Capture the incoming request payload
+    # Capture the original incoming request payload
     raw_request = frappe.request.get_data(as_text=True)
 
+    # Get request data if it was not passed as an argument
     if not data:
-        data = raw_request
+        data = raw_request or frappe.local.form_dict
 
+    # Parse JSON while supporting both strings and dictionaries
     if isinstance(data, str):
-        data = json.loads(data)
+        data = frappe.parse_json(data)
+
+    # Preserve the original payload for logging
+    request_payload = raw_request or json.dumps(data, indent=2, default=str)
 
     # Create Middleware Sync Log for the incoming Sales Order request
     sync_log = frappe.get_doc({
@@ -73,14 +77,20 @@ def create_sales_order(data=None):
         "status": "Pending",
         "document_type": "Sales Order",
         "sync_type": "Sales Order Sync",
-        "request": raw_request or json.dumps(data, indent=2),
+        "request": request_payload,
         "retry_count": 0,
     })
 
     sync_log.insert(ignore_permissions=True)
 
     try:
-        orders = data.get("data") if isinstance(data, dict) and "data" in data else data
+        # Support both a single order and a list of orders
+        orders = (
+            data.get("data")
+            if isinstance(data, dict) and "data" in data
+            else data
+        )
+
         if isinstance(orders, dict):
             orders = [orders]
 
