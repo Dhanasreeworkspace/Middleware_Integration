@@ -9,12 +9,15 @@
   "document_type",
   "document",
   "sync_type",
-  "response_message",
+  "process_type",
   "column_break_aehc",
   "status",
   "retry_count",
   "sync_time",
   "is_variant",
+  "section_break_rjdw",
+  "response_message",
+  "request_payload",
   "section_break_xyqy",
   "documents"
  ],
@@ -98,12 +101,27 @@
    "fieldtype": "Check",
    "label": "Is Variant",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_rjdw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "Long Text",
+   "label": "Request Payload"
+  },
+  {
+   "fieldname": "process_type",
+   "fieldtype": "Select",
+   "label": "Process",
+   "options": "Incoming\nOutgoing"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-16 11:30:03.694204",
+ "modified": "2026-10-22 15:38:52.305505",
  "modified_by": "Administrator",
  "module": "Middleware Integration",
  "name": "Middleware Sync Log",
