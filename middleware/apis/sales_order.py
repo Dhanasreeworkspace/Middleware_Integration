@@ -94,11 +94,20 @@ def create_sales_order(data=None):
         # if not customer_name:
         #     frappe.throw("Missing required field: customer.customer_name")
 
-        if not frappe.db.exists("Customer", customer_name):
+        existing_customer = frappe.db.get_value(
+            "Customer",
+            {"source_customer_id": customer_id},
+            "name"
+        )
+
+        if existing_customer:
+            customer = existing_customer
+        else:
             cust_doc = frappe.get_doc(
                 {
                     "doctype": "Customer",
-                    # "shopify_customer_id": customer_id, -> create this custom field in Customer doctype
+                    'source': "Shopify",
+                    "source_customer_id": customer_id,
                     "customer_name": customer_name or customer_id,
                     "customer_type": "Individual"
                 }
