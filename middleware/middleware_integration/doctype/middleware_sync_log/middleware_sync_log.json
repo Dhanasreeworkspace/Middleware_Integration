@@ -109,19 +109,21 @@
   {
    "fieldname": "request_payload",
    "fieldtype": "Long Text",
-   "label": "Request Payload"
+   "label": "Request Payload",
+   "read_only": 1
   },
   {
    "fieldname": "process_type",
    "fieldtype": "Select",
    "label": "Process",
-   "options": "Incoming\nOutgoing"
+   "options": "Incoming\nOutgoing",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-22 15:38:52.305505",
+ "modified": "2026-10-22 15:53:28.820199",
  "modified_by": "Administrator",
  "module": "Middleware Integration",
  "name": "Middleware Sync Log",
