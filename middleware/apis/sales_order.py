@@ -51,121 +51,137 @@ from frappe.utils import now_datetime
 #     # frappe.db.commit()
 
 #     return {"sales_order": so_doc.name, "customer": customer}
-
 @frappe.whitelist()
 def create_sales_order(data=None):
-    """Create a Customer if needed, then create a Sales Order."""
+    """Create a Customer if needed, then create a Draft Sales Order."""
 
-    # Capture the original incoming request payload
-    raw_request = frappe.request.get_data(as_text=True)
-
-    # Get request data if it was not passed as an argument
     if not data:
-        data = raw_request or frappe.local.form_dict
+        data = frappe.local.form_dict
 
-    # Parse JSON while supporting both strings and dictionaries
-    if isinstance(data, str):
-        data = frappe.parse_json(data)
+    data = frappe.parse_json(data)
+    raw_request = frappe.request.get_data(as_text=True) if frappe.request else None
 
-    # Preserve the original payload for logging
     request_payload = raw_request or json.dumps(data, indent=2, default=str)
 
-    # Create Middleware Sync Log for the incoming Sales Order request
     sync_log = frappe.get_doc({
         "doctype": "Middleware Sync Log",
         "event": "create",
         "status": "Pending",
         "document_type": "Sales Order",
-        "sync_type": "Sales Order Sync",
+        "sync_type": "Single Document",
+        "process_type": "Incoming",
         "request": request_payload,
-        "retry_count": 0,
+        "retry_count": 0
     })
-
     sync_log.insert(ignore_permissions=True)
 
     try:
-        # Support both a single order and a list of orders
-        orders = (
-            data.get("data")
-            if isinstance(data, dict) and "data" in data
-            else data
-        )
+        order_details = data.get("order") or {}
+        customer_details = data.get("customer") or {}
+        items_data = data.get("items") or []
 
-        if isinstance(orders, dict):
-            orders = [orders]
+        # Validate customer
+        customer_id = customer_details.get("customer_id")
+        customer_name = customer_details.get("customer_name")
 
-        results = []
+        customer = customer_name or customer_id
 
-        for order_data in orders:
-            order_details = order_data.get("order")
-            customer_details = order_data.get("customer")
-            items_data = order_data.get("items")
-            sales_channel = order_details.get("sales_channel")
+        if not customer_id:
+            frappe.throw("Missing required field: customer.customer_id")
 
-            customer_name = customer_details.get("customer_name")
+        # if not customer_name:
+        #     frappe.throw("Missing required field: customer.customer_name")
 
-            customer = frappe.db.get_value(
-                "Customer",
-                {"customer_name": customer_name},
-                "name"
-            )
-
-            # Create Customer if it does not exist
-            if not customer:
-                customer_doc = frappe.get_doc({
+        if not frappe.db.exists("Customer", customer_name):
+            cust_doc = frappe.get_doc(
+                {
                     "doctype": "Customer",
-                    "customer_name": customer_name,
-                    "customer_type": "Individual",
-                })
+                    # "shopify_customer_id": customer_id, -> create this custom field in Customer doctype
+                    "customer_name": customer_name or customer_id,
+                    "customer_type": "Individual"
+                }
+            )
+            cust_doc.insert(ignore_permissions=True)
+            customer = cust_doc.name
 
-                customer_doc.insert(ignore_permissions=True)
-                customer = customer_doc.name
+        # Validate items
+        if not isinstance(items_data, list) or not items_data:
+            frappe.throw("Order must contain at least one item.")
 
-            sales_order_items = []
+        sales_order_items = []
 
-            for item in items_data:
-                sales_order_items.append({
-                    "item_code": item.get("item_code"),
-                    "qty": item.get("quantity"),
-                    "rate": item.get("unit_price"),
-                    "delivery_date": order_details.get("delivery_date"),
-                    "warehouse": item["warehouse"]["warehouse_name"]
-                })
+        for item in items_data:
+            item_code = item.get("item_code")
+            qty = item.get("quantity")
+            rate = item.get("unit_price")
 
-            # Create Sales Order
-            so_doc = frappe.get_doc({
-                "doctype": "Sales Order",
-                "customer": customer,
-                "transaction_date": order_details.get("order_date"),
-                "delivery_date": order_details.get("delivery_date"),
-                "sales_channel": sales_channel,
-                "items": sales_order_items,
+            if not item_code:
+                frappe.throw("Missing item_code in order items.")
+
+            if qty is None or qty <= 0:
+                frappe.throw(f"Invalid quantity for item {item_code}.")
+
+            if rate is None or rate < 0:
+                frappe.throw(f"Invalid rate for item {item_code}.")
+
+            warehouse_details = item.get("warehouse") or {}
+
+            sales_order_items.append({
+                "item_code": item_code,
+                "qty": qty,
+                "rate": rate,
+                "delivery_date": (
+                    order_details.get("delivery_date")
+                    or data.get("delivery_date")
+                ),
+                "warehouse": warehouse_details.get("warehouse_name")
             })
 
-            so_doc.insert(ignore_permissions=True)
+        # Create Sales Order
+        so_data = {
+            "doctype": "Sales Order",
+            "customer": customer,
+            "transaction_date": (
+                order_details.get("order_date")
+                or data.get("transaction_date")
+            ),
+            "delivery_date": (
+                order_details.get("delivery_date")
+                or data.get("delivery_date")
+            ),
+            "sales_channel": (
+                order_details.get("sales_channel")
+                or data.get("sales_channel")
+            ),
+            "set_warehouse": data.get("set_warehouse"),
+            "po_no": (
+                data.get("po_no")
+                or order_details.get("po_no")
+                or order_details.get("order_number")
+            ),
+            "items": sales_order_items
+        }
 
-            results.append({
-                "sales_order": so_doc.name,
-                "customer": customer,
-            })
+        so_doc = frappe.get_doc(so_data)
+        so_doc.insert(ignore_permissions=True)
+        # frappe.db.commit()
 
-        # Update the log after successful creation
-        sync_log.document = results[0]["sales_order"] if results else None
+        # Middleware: Update Sync Log after successful creation
+        sync_log.document = so_doc.name
         sync_log.status = "Success"
         sync_log.sync_time = now_datetime()
         sync_log.save(ignore_permissions=True)
 
         return {
             "success": True,
-            "message": "Sales Order created successfully",
-            "data": results,
+            "sales_order": so_doc.name,
+            "customer": customer,
+            "message": "Sales Order created successfully"
         }
 
     except Exception:
-        # Mark the log as failed if an error occurs
-        sync_log.reload()
+        # Middleware: Mark Sync Log as Failed
         sync_log.status = "Failed"
         sync_log.sync_time = now_datetime()
         sync_log.save(ignore_permissions=True)
-
         raise

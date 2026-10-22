@@ -5,20 +5,22 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "event",
-  "document_type",
-  "document",
-  "sync_type",
-  "response_message",
-  "request",
-  "column_break_aehc",
-  "status",
-  "retry_count",
-  "sync_time",
-  "is_variant",
-  "section_break_xyqy",
-  "documents"
- ],
+    "event",
+    "document_type",
+    "document",
+    "sync_type",
+    "process_type",
+    "column_break_aehc",
+    "status",
+    "retry_count",
+    "sync_time",
+    "request_payload_section",
+    "request",
+    "response_message",
+    "is_variant",
+    "section_break_xyqy",
+    "documents"
+],
  "fields": [
   {
    "fieldname": "column_break_aehc",
@@ -47,12 +49,6 @@
    "read_only": 1
   },
   {
-    "fieldname": "request",
-    "fieldtype": "Small Text",
-    "label": "Request",
-    "read_only": 1
-},
-  {
    "fieldname": "retry_count",
    "fieldtype": "Int",
    "label": "Retry Count",
@@ -76,7 +72,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.sync_type==\"Single Document\" || doc.sync_type==\"Sales Order Sync\"",
+   "depends_on": "eval:doc.sync_type==\"Single Document\"",
    "fieldname": "document",
    "fieldtype": "Data",
    "label": "Document",
@@ -95,7 +91,24 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Sync Type",
-   "options": "Single Document\nBulk Import\nSales Order Sync",
+   "options": "Single Document\nBulk Import",
+   "read_only": 1
+  },
+  {
+   "fieldname": "process_type",
+   "fieldtype": "Select",
+   "label": "Process",
+   "options": "Incoming\nOutgoing",
+   "read_only": 1
+  },
+  {
+    "fieldname": "request_payload_section",
+    "fieldtype": "Section Break"
+},
+  {
+   "fieldname": "request",
+   "fieldtype": "Long Text",
+   "label": "Request Payload",
    "read_only": 1
   },
   {
@@ -110,7 +123,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-16 11:30:03.694204",
+ "modified": "2026-10-22 13:11:05.504896",
  "modified_by": "Administrator",
  "module": "Middleware Integration",
  "name": "Middleware Sync Log",
