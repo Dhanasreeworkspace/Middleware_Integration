@@ -59,9 +59,12 @@ def create_sales_order(data=None):
     if not data:
         data = frappe.local.form_dict
 
-    data = frappe.parse_json(data)
-
-    request_payload = json.dumps(data, indent=2, default=str)
+    # Build the payload string safely, whatever shape the request has
+    try:
+        data = frappe.parse_json(data)
+        request_payload = json.dumps(data, indent=2, default=str)
+    except Exception:
+        request_payload = str(data)
 
     sync_log = frappe.get_doc({
         "doctype": "Middleware Sync Log",
@@ -75,8 +78,12 @@ def create_sales_order(data=None):
     })
 
     sync_log.insert(ignore_permissions=True)
+    frappe.db.commit()  # persist the log so a later rollback can't remove it
 
     try:
+
+        if not isinstance(data, dict):
+            frappe.throw("Invalid payload: expected a JSON object.")
 
         order_details = data.get("order") or {}
         customer_details = data.get("customer") or {}
@@ -191,8 +198,12 @@ def create_sales_order(data=None):
         }
 
     except Exception:
-        # Middleware: Mark Sync Log as Failed
+        # Discard partial work (e.g. a newly created Customer) from this request
+        frappe.db.rollback()
+
+        # Middleware: Mark Sync Log as Failed (the log itself was committed earlier)
         sync_log.status = "Failed"
         sync_log.sync_time = now_datetime()
         sync_log.save(ignore_permissions=True)
+        frappe.db.commit()
         raise
