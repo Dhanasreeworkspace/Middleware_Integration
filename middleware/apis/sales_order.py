@@ -184,26 +184,30 @@ def create_sales_order(data=None):
         so_doc.insert(ignore_permissions=True)
         # frappe.db.commit()
 
-        # Middleware: Update Sync Log after successful creation
-        sync_log.document = so_doc.name
-        sync_log.status = "Success"
-        sync_log.sync_time = now_datetime()
-        sync_log.save(ignore_permissions=True)
-
-        return {
+        response = {
             "success": True,
             "sales_order": so_doc.name,
             "customer": customer,
             "message": "Sales Order created successfully"
         }
 
+        # Middleware: Update Sync Log after successful creation
+        sync_log.document = so_doc.name
+        sync_log.status = "Success"
+        sync_log.sync_time = now_datetime()
+        sync_log.response_message = json.dumps(response, indent=2)
+        sync_log.save(ignore_permissions=True)
+        frappe.db.commit()
+        return response
+
     except Exception:
-        # Discard partial work (e.g. a newly created Customer) from this request
+        response_message = frappe.get_traceback()
         frappe.db.rollback()
 
-        # Middleware: Mark Sync Log as Failed (the log itself was committed earlier)
+        # Middleware: Mark Sync Log as Failed 
         sync_log.status = "Failed"
         sync_log.sync_time = now_datetime()
+        sync_log.response_message = response_message
         sync_log.save(ignore_permissions=True)
         frappe.db.commit()
         raise
