@@ -52,7 +52,7 @@ from frappe.utils import now_datetime
 #     return {"sales_order": so_doc.name, "customer": customer}
 
 
-@frappe.whitelist()
+# @frappe.whitelist()
 def create_sales_order(data=None):
     """Create a Customer if needed, then create a Draft Sales Order."""
 

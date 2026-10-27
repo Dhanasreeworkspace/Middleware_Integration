@@ -1,3 +1,5 @@
+import json
+
 import frappe
 import requests
 from middleware.apis.item_sync import update_sync_log, build_payload
@@ -69,6 +71,10 @@ def process_bulk_sync(items, payload=None, log_name=None):
     else:
         log = create_bulk_sync_log(items)
 
+    log.request_payload = json.dumps(payload, indent=2, default=str)
+    log.save(ignore_permissions=True)
+    frappe.db.commit()
+
     response = None
 
     try:
@@ -123,6 +129,7 @@ def create_bulk_sync_log(items):
         "doctype": "Middleware Sync Log",
         "event": "create",
         "sync_type": "Bulk Import",
+        "process_type": "Outgoing",
         "status": "Pending",
         "document_type": "Item",
         "documents": documents

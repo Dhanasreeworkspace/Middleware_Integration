@@ -1,3 +1,5 @@
+import json
+
 import frappe
 import requests
 from frappe.utils import now_datetime
@@ -117,6 +119,10 @@ def sync_item(data, log_name=None):
         doc = frappe.get_doc("Item", item_code)
         payload = build_payload(doc, event, include_images=True)
 
+    log.request_payload = json.dumps(payload, indent=2, default=str)
+    log.save(ignore_permissions=True)
+    frappe.db.commit()
+
     response = None
 
     try:
@@ -151,6 +157,7 @@ def create_sync_log(item_code, event, is_variant=False, parent_sku=None):
         "document": item_code,
         "event": event,
         "sync_type": "Single Document",
+        "process_type": "Outgoing",
         "is_variant": is_variant,
         "parent_sku": parent_sku,
         "status": "Pending"
