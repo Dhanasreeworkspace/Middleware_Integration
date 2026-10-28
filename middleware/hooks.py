@@ -5,34 +5,6 @@ app_description = "Middleware Integration App for ERPNext"
 app_email = "dev3@rakonex.com"
 app_license = "mit"
 
-# Fixtures
-# --------
-
-fixtures = [
-    {
-        "doctype": "Custom Field",
-        "filters": {
-            "dt": "Item",
-            "fieldname": [
-                "in",
-                [
-                    "arabic_title",
-                    "material",
-                    "recommended_age",
-                    "specification",
-                    "dimensions",
-                    "product_weight",
-                    "column_break_spec",
-                    "package_dimensions",
-                    "package_weight",
-                    "enable_product_sync",
-                    "active_price_list",
-                ]
-            ]
-        }
-    }
-]
-
 # Apps
 # ------------------
 
